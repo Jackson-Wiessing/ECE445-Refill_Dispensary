@@ -3194,7 +3194,7 @@
   (symbol (lib_id "Connector_Generic:Conn_01x03") (at 342.9 125.73 270) (unit 1)
     (in_bom yes) (on_board yes) (fields_autoplaced)
     (uuid 301407c9-703c-46e7-82dc-e0300c9d1f56)
-    (property "Reference" "J?" (id 0) (at 347.98 124.4599 90)
+    (property "Reference" "J14" (id 0) (at 347.98 124.4599 90)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "SWD" (id 1) (at 347.98 126.9999 90)
@@ -3658,7 +3658,7 @@
   (symbol (lib_id "power:GND") (at 345.44 120.65 90) (unit 1)
     (in_bom yes) (on_board yes) (fields_autoplaced)
     (uuid 6e8d9245-e0ab-4498-a15b-8fb304c9e918)
-    (property "Reference" "#PWR?" (id 0) (at 351.79 120.65 0)
+    (property "Reference" "#PWR0141" (id 0) (at 351.79 120.65 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Value" "GND" (id 1) (at 349.25 120.6499 90)
@@ -4397,7 +4397,7 @@
   (symbol (lib_id "power:+3.3V") (at 342.9 120.65 0) (unit 1)
     (in_bom yes) (on_board yes) (fields_autoplaced)
     (uuid d85a6186-1fb9-400f-a4bf-bd2670303853)
-    (property "Reference" "#PWR?" (id 0) (at 342.9 124.46 0)
+    (property "Reference" "#PWR0140" (id 0) (at 342.9 124.46 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Value" "+3.3V" (id 1) (at 342.9 115.57 0))
@@ -4893,11 +4893,11 @@
     (path "/cbedd1bd-cd03-4b07-8708-a77b954f25f0"
       (reference "#PWR0139") (unit 1) (value "GND") (footprint "")
     )
-    (path "/6e8d9245-e0ab-4498-a15b-8fb304c9e918"
-      (reference "#PWR?") (unit 1) (value "GND") (footprint "")
-    )
     (path "/d85a6186-1fb9-400f-a4bf-bd2670303853"
-      (reference "#PWR?") (unit 1) (value "+3.3V") (footprint "")
+      (reference "#PWR0140") (unit 1) (value "+3.3V") (footprint "")
+    )
+    (path "/6e8d9245-e0ab-4498-a15b-8fb304c9e918"
+      (reference "#PWR0141") (unit 1) (value "GND") (footprint "")
     )
     (path "/eb502b63-af1a-4319-bc15-3a83ac3a1265"
       (reference "C1") (unit 1) (value "100n") (footprint "Capacitor_SMD:C_0402_1005Metric")
@@ -5020,7 +5020,7 @@
       (reference "J13") (unit 1) (value "SWD") (footprint "Connector_JST:JST_XH_B3B-XH-AM_1x03_P2.50mm_Vertical")
     )
     (path "/301407c9-703c-46e7-82dc-e0300c9d1f56"
-      (reference "J?") (unit 1) (value "SWD") (footprint "Connector_JST:JST_XH_B3B-XH-AM_1x03_P2.50mm_Vertical")
+      (reference "J14") (unit 1) (value "SWD") (footprint "Connector_JST:JST_XH_B3B-XH-AM_1x03_P2.50mm_Vertical")
     )
     (path "/c777b314-1500-42bb-9e4a-065e115b607d"
       (reference "Q1") (unit 1) (value "TIP120") (footprint "Package_TO_SOT_THT:TO-220-3_Vertical")
