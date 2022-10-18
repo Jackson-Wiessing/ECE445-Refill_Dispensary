@@ -52,18 +52,24 @@ void setup() {
   Serial.begin(9600); // starts communication through the USB connection at a baud rate of 9600
 }
 
+/* The goal of this function is to let us know if we're properly understanding how the buttons work */
 void doButtonsWork() {
   int button_1_state = digitalRead(button_1);
   int button_2_state = digitalRead(button_2);
-  
-  if (button_1_state == PRESSED) {
-    Serial.println("button 1 pressed");
-  }
-  if (button_2_state == PRESSED {
-    Serial.println("button 2 pressed");
+  int count = 0;
+  while(count < 5) {
+    if (button_1_state == PRESSED) {
+      Serial.println("button 1 pressed");
+      count ++;
+    }
+    if (button_2_state == PRESSED {
+      Serial.println("button 2 pressed");
+      count ++;
+    }
   }
 }
 
+/* The goal of this function is to figure out the values given by potentiometer readings */
 void doPotsWork() {
   int pot_1_state = analogRead(pot_1);
   int pot_2_state = analogRead(pot_2);
@@ -75,17 +81,37 @@ void doPotsWork() {
   }
 }
 
+/* Testing for the first part of the pseudocode */
 void doButtonsWithPotsWork() {
-  
-}
-
-void loop() {
-  // put your main code here, to run repeatedly:
   int button_1_state = digitalRead(button_1);
   int button_2_state = digitalRead(button_2);
   while (button_1_state != PRESSED && button_2_state != PRESSED) {
     int pot_1_state = analogRead(pot_1);
     int pot_2_state = analogRead(pot_2);
-  }
+    if (pot_1_state > 0 or pot_2_state > 0) {
+      Serial.println("Pot 1 Value: ");
+      Serial.println(pot_1_state);
+      Serial.println("Pot 2 Value: ");
+      Serial.println(pot_2_state);
+    }
+  }  
+}
 
+/* Figuring out how to get things to display on the screen & update the values */
+void doesScreenWork() {
+
+}
+
+void refillDispensary() {
+  int button_1_state = digitalRead(button_1);
+  int button_2_state = digitalRead(button_2);
+  while (button_1_state != PRESSED && button_2_state != PRESSED) {
+    int pot_1_state = analogRead(pot_1);
+    int pot_2_state = analogRead(pot_2);
+    // need unit tests to work first before continuing 
+  }
+}
+
+void loop() {
+  // put your main code here, to run repeatedly:
 }
