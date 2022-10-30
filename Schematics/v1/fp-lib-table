@@ -1,0 +1,4 @@
+(fp_lib_table
+  (lib (name "library")(type "KiCad")(uri "C:/Users/jacks/OneDrive/Desktop/library.pretty")(options "")(descr ""))
+  (lib (name "Amplifier_Instrumentation")(type "KiCad")(uri "C:/Users/jacks/Downloads/Amplifier_Instrumentation.pretty")(options "")(descr ""))
+)

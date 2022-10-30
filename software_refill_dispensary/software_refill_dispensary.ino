@@ -114,4 +114,8 @@ void refillDispensary() {
 
 void loop() {
   // put your main code here, to run repeatedly:
+  enum States{Wait, Dispensing, Debug};
+  
+
+
 }
