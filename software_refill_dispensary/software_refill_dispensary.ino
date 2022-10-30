@@ -3,83 +3,55 @@
 /* Software for Refill Dispensary */
 #define PRESSED 1 
 #define RELEASED 0 // probs don't need this at all 
+#define SCREEN_ADDR 0x78
 
 /* UI components */
-#define pot_1 32 // for user selection 1
-#define pot_2 34 // for user selection 2
+const int pot_1 = 32; // for user selection 1
+const int pot_2 = 34; // for user selection 2
 
-#define button_1 12 // for user selection 1
-#define button_2 14 // for user selection 2
-#define reset_button 15 // resets the entire machine
+const int button_1 = 12; // for user selection 1
+const int button_2 = 14; // for user selection 2
+const int reset_button = 15; // resets the entire machine
 
-#define green_status  16 // machine status LEDs
-#define yellow_status  17
-#define red_status  19
+const int green_led = 16; // machine status LEDs
+const int yellow_led = 17;
+const int red_led = 19;
 
 /* Screen */
-#define screen_data  4 // data line for communicating between screen & microcontroller
-#define screen_clock  5
+const int screen_data = 4; // data line for communicating between screen & microcontroller
+const int screen_clock = 5;
 
 /* Dispensing part */
-#define load_cell  31// will send values to microcontroller
-#define valve_1  1
-#define valve_2  2
+const int load_cell = 31; // will send values to microcontroller
+const int valve_1 = 1;
+const int valve_2 = 2;
 
-
-#define Screen_addr 0x78
-
-
-
+/* States can be categorized by the following:
+Wait  - no buttons have been pressed
+      - nothing is being dispensed
+      -  green status LED is on
+Dispense  - Conditions to check before entering the state: 
+            1. button is pressed and the corresponding potentiometer has a non-zero value
+            2. previous state was wait
+            3. load cell reads a value > X grams -> we originally said 19 grams
+          - machine status turns yellow
+          - "zeros" out the scale
+          - corresponding valve opens
+          - constantly checks if the load cell detects a weight within tolerance of requested quantity -> when it does, it stops & closes the valve
+Debug - 
+*/
 enum State {Wait, Dispense, Debug};
 State curState;
 
-void setup() {
-  // ***** might need to add something else for PWM vs Analog or whatever ..... *******
-  // put your setup code here, to run once:
-  int button_1_state,button_2_state,reset_state,pot_1_state,pot_2_state = 0; 
-  pinMode(pot_1, INPUT);
-  pinMode(pot_2, INPUT);
+int button_1_state, button_2_state, reset_state, pot_1_state, pot_2_state = 0; 
 
-  pinMode(button_1, INPUT);
-  pinMode(button_2, INPUT);
-  pinMode(reset_button, INPUT);
-
-  pinMode(screen_data, OUTPUT);
-  pinMode(screen_clock, OUTPUT);
-  
-  pinMode(green_status, OUTPUT);
-  pinMode(yellow_status, OUTPUT);
-  pinMode(red_status, OUTPUT);
-
-  pinMode(load_cell, INPUT);
-
-  pinMode(valve_1, OUTPUT);
-  pinMode(valve_2, OUTPUT);
-
-  Serial.begin(9600); // starts communication through the USB connection at a baud rate of 9600
-  Screen();
-}
 
 /* The goal of this function is to let us know if we're properly understanding how the buttons work */
-void doButtonsWork() {
-  int button_1_state = digitalRead(button_1);
-  int button_2_state = digitalRead(button_2);
-  int count = 0;
-  while(count < 5) {
-    if (button_1_state == PRESSED) {
-      Serial.println("button 1 pressed");
-      count ++;
-    }
-    if (button_2_state == PRESSED) {
-      Serial.println("button 2 pressed");
-      count ++;
-    }
-  }
-}
 void getButtons(int * buf){
   int button_1_state = digitalRead(button_1);
   int button_2_state = digitalRead(button_2);
   int reset_state =  digitalRead(reset_button);
+  
   if (button_1_state == 1){
       Serial.println("button 1 pressed");
   }
@@ -102,7 +74,7 @@ void getPots() {
 }
 
 /* Testing for the first part of the pseudocode */
-void doButtonsWithPotsWork() {
+void buttonsWithPots() {
   int button_1_state = digitalRead(button_1);
   int button_2_state = digitalRead(button_2);
   while (button_1_state != PRESSED && button_2_state != PRESSED) {
@@ -117,13 +89,21 @@ void doButtonsWithPotsWork() {
   }  
 }
 
-/* setsup screen to write to*/
-void Screen() {
-  setSDA(screen_data);
-  setSCL(screen_clock);
-  Wire1.begin(Screen_addr);
+/* Updates the status of the leds */
+void updateLEDS(int green_status,int yellow_status,int red_status){
+  digitalWrite(green_led, green_status);
+  digitalWrite(yellow_led, yellow_status);
+  digitalWrite(red_led, red_status);
 }
 
+/* setsup screen to write to */
+void setupScreen() {
+  setSDA(screen_data);
+  setSCL(screen_clock);
+  Wire1.begin(SCREEN_ADDR);
+}
+
+/*
 void refillDispensary() {
   int button_1_state = digitalRead(button_1);
   int button_2_state = digitalRead(button_2);
@@ -133,16 +113,35 @@ void refillDispensary() {
     // need unit tests to work first before continuing 
   }
 }
-void LEDS(int green,int yellow,int red){
-  digitalWrite(green_status,green);
-  digitalWrite(yellow_status,yellow);
-  digitalWrite(red_status,red);
+*/ 
+
+void setup() {
+  pinMode(pot_1, INPUT);
+  pinMode(pot_2, INPUT);
+
+  pinMode(button_1, INPUT);
+  pinMode(button_2, INPUT);
+  pinMode(reset_button, INPUT);
+
+  pinMode(green_led, OUTPUT);
+  pinMode(yellow_led, OUTPUT);
+  pinMode(red_led, OUTPUT);
+
+  pinMode(screen_data, OUTPUT);
+  pinMode(screen_clock, OUTPUT);
+
+  pinMode(load_cell, INPUT);
+  pinMode(valve_1, OUTPUT);
+  pinMode(valve_2, OUTPUT);
+
+  Serial.begin(9600); // starts communication through the USB connection at a baud rate of 9600
+  setupScreen();
 }
 
 void loop() {
-  switch curState{
+  switch curState {
     case Wait:
-      LEDS(1,0,0); //green
+      updateLEDS(1,0,0); // green
       button_1_state = digitalRead(button_1);
       button_2_state = digitalRead(button_2);
       reset_state =  digitalRead(reset_button);
@@ -155,15 +154,13 @@ void loop() {
       
       break;
     case Dispense:
-      LEDS(0,1,0);  //yellow
+      updateLEDS(0,1,0);  //yellow
       break;
     case Debug:
-      LEDS(0,0,1); //red
+      updateLEDS(0,0,1); //red
       break;
 
     default:
       break;
   }
-
-
 }
