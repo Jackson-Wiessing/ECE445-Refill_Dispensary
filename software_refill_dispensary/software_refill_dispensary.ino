@@ -17,8 +17,8 @@ const int yellow_led = 17;
 const int red_led = 19;
 
 /* Screen */
-const int screen_data = 4; // data line for communicating between screen & microcontroller
-const int screen_clock = 5;
+const int screen_data = 2; // data line for communicating between screen & microcontroller  -> was pin 4
+const int screen_clock = 3; // was pin 5
 
 /* Dispensing part */
 const int load_cell = 31; // will send values to microcontroller
@@ -111,10 +111,10 @@ void updateLEDS(int green_status,int yellow_status,int red_status){
 }
 
 /* setsup screen to write to */
-void setupScreen() {
-  setSDA(screen_data);
-  setSCL(screen_clock);
-  Wire1.begin(SCREEN_ADDR);
+void setupScreen() { // recheck the pins for SDA or SCL
+  Wire1.setSDA(screen_data);
+  Wire1.setSCL(screen_clock);
+  Wire1.begin(SCREEN_ADDR); 
 }
 
 /*
@@ -132,7 +132,6 @@ void refillDispensary() {
 void readUI() {
   button_1_state = digitalRead(button_1);
   button_2_state = digitalRead(button_2);
-  // reset_state =  digitalRead(reset_button); I don't think we care about this one here...
   pot_1_state = analogRead(pot_1);
   pot_2_state = analogRead(pot_2);
 }
@@ -164,6 +163,14 @@ void closeValves() {
   digitalWrite(valve_2,LOW);
 }
 
+/* Returns the # of grams to dispense based off of a potentiometer reading */
+int scaleQuantity(int turn_val) {
+  if (turn_val > 1000) {
+    turn_val = 1000;
+  }
+  return turn_val * 5; // potentiometer goes from 0 to 1,023 which is about 0 to 1,000 -> 1 tick value = 5 grams
+}
+
 /* */
 void setup() {
   pinMode(pot_1, INPUT);
@@ -190,6 +197,7 @@ void setup() {
 
 // int button_1_state, button_2_state, reset_state, pot_1_state, pot_2_state = 0; 
 // weight
+// need to constantly check reset in here too...
 /* */
 void loop() {
   switch curState { //enum State {Wait, Start, Dispense, End, Debug};
@@ -197,7 +205,9 @@ void loop() {
       updateLEDS(1,0,0); // green
       readUI(); 
       if (button_1_state == PRESSED) {
-        if ()
+        if (pot_1_state > 10) {
+          
+        }
       }
       closeValves(); // idk if we want this...
       break;
