@@ -126,39 +126,31 @@ void updateLEDS(int green_status, int yellow_status, int red_status){
 
 /* Setsup screen to write to */
 void setupScreen() { // recheck the pins for SDA or SCL
-  Wire1.setSDA(screen_data);
-  Wire1.setSCL(screen_clock);
-  Wire1.begin(SCREEN_ADDR); 
-}
-
 /*
-void refillDispensary() {
-  int button_1_state = digitalRead(button_1);
-  int button_2_state = digitalRead(button_2);
-  while (button_1_state != PRESSED && button_2_state != PRESSED) {
-    int pot_1_state = analogRead(pot_1);
-    int pot_2_state = analogRead(pot_2);
-    // need unit tests to work first before continuing 
-  }
+  Wire.setSDA(screen_data); // the 3 of these were previously Wire1
+  Wire.setSCL(screen_clock);
+  Wire.begin(SCREEN_ADDR); 
+  */
 }
-*/ 
 
+/* Gets the status of the buttons & potentiometers */
 void readUI() {
   button_1_state = digitalRead(button_1);
   button_2_state = digitalRead(button_2);
   pot_1_state = analogRead(pot_1);
   pot_2_state = analogRead(pot_2);
+  reset_state = analogRead(reset_button);
 }
 
 // enum ScreenText {Normal, NoContainer, NoQuantity};
 /* */
 void updateScreen(ScreenText text) {
-  switch text {
-    case: Normal:
+  switch (text) {
+    case Normal:
       // Selected Product X, Quantity = Y 
       break;
       
-    case: NoContainer: 
+    case NoContainer: 
       // Error: Must Place Container!
       break;
 
@@ -171,45 +163,45 @@ void updateScreen(ScreenText text) {
   }
 }
 
-/* */
+/* opens the respective valve */
 void openValve(int v) {
   digitalWrite(v, HIGH);
 }
 
-/* */
+/* closes both valves */
 void closeValves() {
   digitalWrite(valve_1,LOW); //ensure that valves are closed
   digitalWrite(valve_2,LOW);
 }
 
-/* */
+/* this function is called as soon as a valve opens. It constantly checks the weight of the container with the weight of the load cell */
 int fillUp() {
-  // get the value of the load cell
   int count = 0;
   int prev_value = -1;
-  /*
-  while (load cell value < (.9 * weight)) {
+  int load_cell_val = 0; // get the value of the load cell here
+
+  while (load_cell_val < (.9 * weight)) {
     if (count == 10) {
-      return OUTOFSTOCK; // means the machine is out of stock      
+      return OUTOFSTOCK;    
     }
     
-    if (prev_value == load cell value) {
+    if (prev_value == load_cell_val) {
       count ++;
     }
     delay (10);
-    prev_value = load cell value
+    prev_value = load_cell_val;
   }
 
-  if (load cell value > (1.1 * weight)) {
+  if (load_cell_val > (1.1 * weight)) {
     return OVERFLOW;
   }
   else {
     return SUCCESS;
   }
-  */
+  
 }
 
-/* */
+/* Runs once at the beginning */
 void setup() {
   pinMode(pot_1, INPUT);
   pinMode(pot_2, INPUT);
@@ -235,16 +227,14 @@ void setup() {
   setupScreen();
 }
 
-// int button_1_state, button_2_state, reset_state, pot_1_state, pot_2_state = 0; 
-// weight
-// need to constantly check reset in here too...
-/* */
+int res; 
+/* Constantly runs */
 void loop() {
   if (reset_state == PRESSED) {
     closeValves();
     curState = Wait;
   }
-  switch curState { //enum State {Wait, Start, Dispense, End, Debug};
+  switch (curState) { //enum State {Wait, Start, Dispense, End, Debug};
     case Wait:
       // closeValves(); // idk if we want this here...
       updateLEDS(1,0,0); // green
@@ -262,8 +252,8 @@ void loop() {
       break;
     
     case Dispense:
-      updateLEDS(0,1,0);  //yellow
-      int res = fillUp();
+      updateLEDS(0,1,0);  // yellow
+      res = fillUp();
       if (res == OVERFLOW || res == OUTOFSTOCK) {
         curState = Debug;
       }
@@ -274,9 +264,9 @@ void loop() {
       break;
 
     case Debug:
-      updateLEDS(0,0,1); //red
+      updateLEDS(0,0,1); // red
       // write to screen some error message
-      if (reset_state == PRESSED {
+      if (reset_state == PRESSED) {
         curState = Wait;
       }
       weight = 0;
