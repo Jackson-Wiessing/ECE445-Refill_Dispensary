@@ -3,6 +3,9 @@
 /* Software for Refill Dispensary */
 #define PRESSED 1 
 #define SCREEN_ADDR 0x78
+#define OVERFLOW -1
+#define SUCCESS 0 
+#define OUTOFSTOCK 1
 
 /* UI components */
 const int pot_1 = 32; // for user selection 1
@@ -30,7 +33,7 @@ Wait  - no buttons have been pressed
       - nothing is being dispensed
       - green status LED is on
       - screen value changes as potentiometers are turned
-Start  - Conditions to check before entering the state: 
+      - Conditions to check before entering the state: 
             1. button is pressed and the corresponding potentiometer has a non-zero value
             2. previous state was wait
             3. load cell reads a value > X grams -> we originally said 19 grams
@@ -40,13 +43,15 @@ Dispense  - machine status turns yellow
           - updates the screen every few seconds
           - if the weight isn't changing after 10 seconds -> enter Debug mode bc something is out of stock 
           - if weight gets picked up -> immediately stop!
-End  - constantly checks if the load cell detects a weight within tolerance of requested quantity 
+          - constantly checks if the load cell detects a weight within tolerance of requested quantity 
               ---> when it does, it stops & closes the valve
-      - ensures that there's no overflow otherwise it will move into the debug state
+            - ensures that there's no overflow otherwise it will move into the debug state
 Debug - machine status is red
       - all button presses and potentiometer spins get ignored until the reset button is hit
 */
 enum State {Wait, Start, Dispense, End, Debug};
+
+/* Tracks the current state of the machine */
 State curState;
 
 /* Screen will be updating periodically to keep the user informed
@@ -57,11 +62,14 @@ NoQuantity - Error: Must Select Quantity!
 enum ScreenText {Normal, NoContainer, NoQuantity};
 ScreenText curText;
 
+/* Initialize all UI components to off or 0 */
 int button_1_state, button_2_state, reset_state, pot_1_state, pot_2_state = 0; 
-int weight; 
 
-/* The goal of this function is to let us know if we're properly understanding how the buttons work */
-void getButtons(int * buf){
+/* Keeps track of the weight to dispense */
+int weight = 0; 
+
+/* TESTING - The goal of this function is to let us know if we're properly understanding how the buttons work */
+void readButtons(int * buf){
   int but_1_state = digitalRead(button_1);
   int but_2_state = digitalRead(button_2);
   int res_state =  digitalRead(reset_button);
@@ -77,8 +85,8 @@ void getButtons(int * buf){
   }
 }
 
-/* The goal of this function is to figure out the values given by potentiometer readings */
-void getPots() {
+/* TESTING - The goal of this function is to figure out the values given by potentiometer readings */
+void readPots() {
   int p_1_state = analogRead(pot_1);
   int p_2_state = analogRead(pot_2);
   Serial.println("Pot 1 Value: ");
@@ -87,30 +95,36 @@ void getPots() {
   Serial.println(p_2_state);
 }
 
-/* Testing for the first part of the pseudocode */
-void buttonsWithPots() {
+/* TESTING - Testing for the first part of the pseudocode */
+void doButtonsAndPotsWork() {
   int but_1_state = digitalRead(button_1);
   int but_2_state = digitalRead(button_2);
-  while (but_1_state != PRESSED && but_2_state != PRESSED) {
-    int p_1_state = analogRead(pot_1);
-    int p_2_state = analogRead(pot_2);
-    if (p_1_state > 0 or p_2_state > 0) {
-      Serial.println("Pot 1 Value: ");
-      Serial.println(p_1_state);
-      Serial.println("Pot 2 Value: ");
-      Serial.println(p_2_state);
-    }
-  }  
+  int p_1_state = analogRead(pot_1);
+  int p_2_state = analogRead(pot_2);
+
+  if (but_1_state == PRESSED && p_1_state > 0) {
+    Serial.println("Pot 1 Value: ");
+    Serial.println(p_1_state);
+    digitalWrite(LED_BUILTIN, HIGH);
+  }
+  else if (but_2_state == PRESSED && p_2_state > 0) {
+    Serial.println("Pot 2 Value: ");
+    Serial.println(p_2_state);
+    digitalWrite(LED_BUILTIN, HIGH);
+  }
+
+  delay(100);
+  digitalWrite(LED_BUILTIN, LOW);
 }
 
 /* Updates the status of the leds */
-void updateLEDS(int green_status,int yellow_status,int red_status){
+void updateLEDS(int green_status, int yellow_status, int red_status){
   digitalWrite(green_led, green_status);
   digitalWrite(yellow_led, yellow_status);
   digitalWrite(red_led, red_status);
 }
 
-/* setsup screen to write to */
+/* Setsup screen to write to */
 void setupScreen() { // recheck the pins for SDA or SCL
   Wire1.setSDA(screen_data);
   Wire1.setSCL(screen_clock);
@@ -158,17 +172,41 @@ void updateScreen(ScreenText text) {
 }
 
 /* */
+void openValve(int v) {
+  digitalWrite(v, HIGH);
+}
+
+/* */
 void closeValves() {
   digitalWrite(valve_1,LOW); //ensure that valves are closed
   digitalWrite(valve_2,LOW);
 }
 
-/* Returns the # of grams to dispense based off of a potentiometer reading */
-int scaleQuantity(int turn_val) {
-  if (turn_val > 1000) {
-    turn_val = 1000;
+/* */
+int fillUp() {
+  // get the value of the load cell
+  int count = 0;
+  int prev_value = -1;
+  /*
+  while (load cell value < (.9 * weight)) {
+    if (count == 10) {
+      return OUTOFSTOCK; // means the machine is out of stock      
+    }
+    
+    if (prev_value == load cell value) {
+      count ++;
+    }
+    delay (10);
+    prev_value = load cell value
   }
-  return turn_val * 5; // potentiometer goes from 0 to 1,023 which is about 0 to 1,000 -> 1 tick value = 5 grams
+
+  if (load cell value > (1.1 * weight)) {
+    return OVERFLOW;
+  }
+  else {
+    return SUCCESS;
+  }
+  */
 }
 
 /* */
@@ -191,6 +229,8 @@ void setup() {
   pinMode(valve_1, OUTPUT);
   pinMode(valve_2, OUTPUT);
 
+  pinMode(LED_BUILTIN, OUTPUT);
+
   Serial.begin(9600); // starts communication through the USB connection at a baud rate of 9600
   setupScreen();
 }
@@ -200,32 +240,49 @@ void setup() {
 // need to constantly check reset in here too...
 /* */
 void loop() {
+  if (reset_state == PRESSED) {
+    closeValves();
+    curState = Wait;
+  }
   switch curState { //enum State {Wait, Start, Dispense, End, Debug};
     case Wait:
+      // closeValves(); // idk if we want this here...
       updateLEDS(1,0,0); // green
       readUI(); 
-      if (button_1_state == PRESSED) {
-        if (pot_1_state > 10) {
-          
-        }
+      if (button_1_state == PRESSED && pot_1_state > 3) {
+        curState = Dispense;
+        weight = pot_1_state;
+        openValve(valve_1);
       }
-      closeValves(); // idk if we want this...
-      break;
-    
-    case Start:
+      else if (button_2_state == PRESSED && pot_2_state > 3) {
+        curState = Dispense;
+        weight = pot_2_state;
+        openValve(valve_2);
+      }
       break;
     
     case Dispense:
       updateLEDS(0,1,0);  //yellow
+      int res = fillUp();
+      if (res == OVERFLOW || res == OUTOFSTOCK) {
+        curState = Debug;
+      }
+      else {
+        curState = Wait;
+      }
+      closeValves();
       break;
 
     case Debug:
       updateLEDS(0,0,1); //red
+      // write to screen some error message
+      if (reset_state == PRESSED {
+        curState = Wait;
+      }
+      weight = 0;
+      closeValves();
       break;
     
-    case End:
-      break;
-
     default:
       break;
   }
