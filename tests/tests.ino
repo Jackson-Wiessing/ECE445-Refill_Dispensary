@@ -8,6 +8,11 @@ const int LED_2 = 0;
 const int pot_2 = 27;
 const int but_2 = 13;
 
+const int screen_rst = 18;
+const int screen_scl = 17;
+const int screen_sda = 16;
+
+
 int count = 0;
 int but_1_state, but_2_state;
 int pot_1_state,pot_2_state =0;
