@@ -3,7 +3,6 @@ from utime import sleep_us
 from time import sleep
 
 def remove_outliers():
-        # this function needs to take the average of stabilized values & then convert it to a weight in grams
         print("entered remove outliers")
         vals = [-10, -10, -10, -10, -10, -10, -10]
         
@@ -14,6 +13,7 @@ def remove_outliers():
             reading = -10
             while reading < 0:
                 reading = scales.stable_value()
+                print(reading)
             vals[i] = reading
             
         # 2. check for outliers
@@ -44,9 +44,13 @@ def remove_outliers():
         
         return average / 7
     
-def scale_values(val):
+def scale_values():
     # TODO:
-    return val
+    # my phone is 227.8 grams
+    res = remove_outliers()
+    print("scaled value: ", res / 405.298507)
+    return res / 405.298507
+    
 
 
 class Scales(HX711):
@@ -83,10 +87,11 @@ class Scales(HX711):
 if __name__ == "__main__":
     scales = Scales(d_out=5, pd_sck=6)
     scales.tare()
-    while True:
+    #while True:
         #val = scales.stable_value()
        # print(val)
-       res = remove_outliers()
-       print(res)
-       
+      # res = remove_outliers()
+       #print(res)
+    while True:
+        print(scale_values())
     scales.power_off()
