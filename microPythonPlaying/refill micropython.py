@@ -70,15 +70,12 @@ red_led=Pin(19,Pin.OUT)
 # pinMode(yellow_led, OUTPUT)
 # pinMode(red_led, OUTPUT)
 
-pinMode(screen_data, OUTPUT)
-pinMode(screen_clock, OUTPUT)
-
 
 #pinMode(load_cell, INPUT)
 load_cell=ADC(31)
 
-valve_1=Pin(1,Pin.OUT)
-valve_2=Pin(2,Pin.OUT)
+valve_1=Pin(2,Pin.OUT) #used to be 1 and 2
+valve_2=Pin(3,Pin.OUT)
 # pinMode(valve_1, OUTPUT)
 # pinMode(valve_2, OUTPUT)
 
@@ -135,7 +132,7 @@ valve_2=Pin(2,Pin.OUT)
 #ScreenText curText
 
 #/* Initialize all UI components to off or 0 */
-button_1_state, button_2_state, reset_state, pot_1_state, pot_2_state = '','','',0,0 
+button_1_state, button_2_state, reset_state, pot_1_state, pot_2_state = 0,0,0,0,0 
 
 #/* Keeps track of the weight to dispense */
 weight = 0 
@@ -212,66 +209,63 @@ def updateScreen(text):
   match text: 
     case 'Select':
       #//show both products, vals of potentiometers for both
-      lcd.clear()
-      lcd.setCursor(0,0)
-      lcd.print("Product 1 quantity: ")
-      lcd.print(pot1setting)
-      lcd.setCursor(0,1)
-      lcd.print("Product 2 quantity: ")
-      lcd.print(pot2setting)
-      break
+      oled.fill(0)
+      oled.text("Product 1 quantity: "+str(pot1setting),0,10)
+      oled.text("Product 2 quantity: "+str(pot1setting),0,35)
+      oled.show()
+      #break
     case 'NormalA':
-      lcd.clear()
-      lcd.setCursor(0,0)
-      lcd.print("Selected Product 1, Quantity= ")
-      lcd.print(weight)
+      oled.fill(0)
+      oled.text("Selected Product 1, Quantity= ",0,10)
+      oled.text(str(weight)+" grams", 5, 35)
+      oled.show()
       #// Selected Product X, Quantity = Y being dispensed
-      break
+      #break
     case 'NormalB':
-      lcd.clear()
-      lcd.setCursor(0,0)
-      lcd.print("Selected Product 2, Quantity= ")
-      lcd.print(weight)
+      oled.fill(0)
+      oled.text("Selected Product 2, Quantity= ",0,10)
+      oled.text(str(weight)+" grams", 5, 35)
+      oled.show()
       #// Selected Product X, Quantity = Y being dispensed
-      break
+      #break
       
     case 'NoContainer': 
-      lcd.clear()
-      lcd.setCursor(0,0)
-      lcd.print("Error: Must Place Container!")
-      break
+      oled.fill(0)
+      oled.text("Error: Must Place Container!",0,10)
+      oled.show()
+      #break
 
     case 'NoQuantity':
-      lcd.clear()
-      lcd.setCursor(0,0)
-      lcd.print("Error: Must Select Quantity!") 
-      break
+      oled.fill(0)
+      oled.text("Error: Must Select Quantity!",0,10)
+      oled.show()
+      #break
 
     case 'Overflow_text':
-      lcd.clear()
-      lcd.setCursor(0,0)
-      lcd.print("Overflow detected") 
-      break
+      oled.fill(0)
+      oled.text("Overflow detected",0,10)
+      oled.show()
+      #break
 
     case 'OutOfStock':
-      lcd.clear()
-      lcd.setCursor(0,0)
-      lcd.print("Item is out of stock") 
-      break
+      oled.fill(0)
+      oled.text("Item is out of stock",0,10)
+      oled.show()
+      #break
 
-    case other:
-      break    
+#     case other:
+#       break    
   
 
 
 
 #/* Gets the status of the buttons & potentiometers */
 def readUI(): 
-  global button_1_state = button_1.value() 
-  global button_2_state = button_2.value()
-  global pot_1_state = pot_1.read_u16() 
-  global pot_2_state = pot_2.read_u16() 
-  global reset_state = reset_button.read_u16()
+  button_1_state = button_1.value() 
+  button_2_state = button_2.value()
+  pot_1_state = pot_1.read_u16() 
+  pot_2_state = pot_2.read_u16() 
+  reset_state = reset_button.read_u16()
 
 
 
@@ -279,7 +273,7 @@ def readUI():
 def openValve(v): 
   if v==1:
     valve_1.value(1)
-  else if v==2:
+  elif v==2:
     valve_2.value(1)
 
 #/* closes both valves */
@@ -295,10 +289,10 @@ res,text='',''
 def fillUp(): 
   count = 0
   prev_value = -1
-  load_cell_val = round(analogRead(load_cell)/65536* 5,2) #// get the value of the load cell here
+  load_cell_val=round(load_cell.read_u16()/65536* 5,2) #// get the value of the load cell here
 
   while (load_cell_val < (0.9 * weight)): 
-    if (count == 10) 
+    if (count == 10): 
       return 'OUTOFSTOCK'    
     
     
@@ -337,22 +331,22 @@ while run:
       pot2setting=round(pot_2_state/65536* 5,2)
       load_cell_val=round(load_cell.read_u16()/65536* 5,2)
       text=Select 
-      if (button_1_state == 'PRESSED' and pot_1_state > 3 and load_cell_val>3): 
+      if (button_1_state == 1 and pot_1_state > 3 and load_cell_val>3): 
         buttonvalA=True
         curState = 'Dispense'
         weight = pot1setting
         openValve(1)
       
-      else if (button_2_state == 'PRESSED' and pot_2_state > 3 and load_cell_val>3): 
+      elif (button_2_state == 1 and pot_2_state > 3 and load_cell_val>3): 
         buttonvalB=True
         curState = 'Dispense'
         weight = pot2setting 
         openValve(2)
       
-      else if ((button_1_state == 'PRESSED' and pot_1_state < 3) or (button_2_state == 'PRESSED' and pot_2_state < 3)):
+      elif ((button_1_state == 1 and pot_1_state < 3) or (button_2_state == 'PRESSED' and pot_2_state < 3)):
         text='NoQuantity'
       
-      else if (button_1_state == 'PRESSED' or button_2_state == 'PRESSED' and load_cell_val==0):
+      elif (button_1_state == 1 or button_2_state == 1 and load_cell_val==0):
         text='NoContainer'
       
       break
@@ -372,7 +366,7 @@ while run:
       if (res == 'OVERFLOW' or res == 'OUTOFSTOCK'): 
         curState = 'Debug'
       
-      else 
+      else: 
         curState = 'Wait'
       
       closeValves()
@@ -387,14 +381,12 @@ while run:
         text='OutOfStock'
       
       #// write to screen some error message
-      if (reset_state == 'PRESSED'): 
+      if (reset_state == 1): 
         curState = 'Wait'
       
-      global weight = 0
+      weight = 0
       closeValves()
       break
     
-    default:
-      break
   
   updateScreen(text)
