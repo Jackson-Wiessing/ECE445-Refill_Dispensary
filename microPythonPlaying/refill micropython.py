@@ -1,195 +1,39 @@
-
-#include <Wire.h> 
-#include <LiquidCrystal_I2C.h>
-#include <string>
-
-#/* Software for Refill Dispensary */
-#define PRESSED 1 
-#define SCREEN_ADDR 0x78
-#define OVERFLOW -1
-#define SUCCESS 0 
-#define OUTOFSTOCK 1
 from machine import Pin, I2C, ADC
-
 from ssd1306 import SSD1306_I2C
-
 from oled import Write, GFX, SSD1306_I2C
-
 from oled.fonts import ubuntu_mono_15, ubuntu_mono_20
-
 import utime
 
-# # /* UI components */
-# pot_1 = 32 # for user selection 1
-# pot_2 = 34 # for user selection 2
-# 
-# button_1 = 12 # for user selection 1
-# button_2 = 14 # for user selection 2
-# reset_button = 15 # resets the entire machine
-# 
-# green_led = 16 # machine status LEDs
-# yellow_led = 17
-# red_led = 19
-# 
-# # /* Screen */
-# screen_data = 2 # data line for communicating between screen & microcontroller  -> was pin 4
-# screen_clock = 3 # was pin 5
-# 
-# # /* Dispensing part */
-# load_cell = 31 # will send values to microcontroller
-# valve_1 = 1
-# valve_2 = 2
-
-#/* Runs once at the beginning */
 WIDTH =128
 
 HEIGHT= 64
 
-i2c=I2C(0,scl=Pin(1),sda=Pin(0),freq=200000)
+i2c = I2C(0, scl = Pin(1), sda = Pin(0),freq = 200000)
 oled = SSD1306_I2C(WIDTH,HEIGHT,i2c)
-#def setup():
+
 pot_1 = ADC(32)
 pot_2 = ADC(34)
-
-# pinMode(pot_1, INPUT)
-# pinMode(pot_2, INPUT)
-
 button_1 = Pin(12,Pin.IN)
 button_2 = Pin(14,Pin.IN)
 reset_button = Pin(15,Pin.IN)
 
-# pinMode(button_1, INPUT)
-# pinMode(button_2, INPUT)
-# pinMode(reset_button, INPUT)
+green_led = Pin(16,Pin.OUT)
+yellow_led = Pin(17,Pin.OUT)
+red_led = Pin(19,Pin.OUT)
 
-green_led=Pin(16,Pin.OUT)
-yellow_led=Pin(17,Pin.OUT)
-red_led=Pin(19,Pin.OUT)
+load_cell = ADC(31)
 
-# pinMode(green_led, OUTPUT)
-# pinMode(yellow_led, OUTPUT)
-# pinMode(red_led, OUTPUT)
+valve_1 = Pin(2,Pin.OUT) #used to be 1 and 2
+valve_2 = Pin(3,Pin.OUT)
 
-
-#pinMode(load_cell, INPUT)
-load_cell=ADC(31)
-
-valve_1=Pin(2,Pin.OUT) #used to be 1 and 2
-valve_2=Pin(3,Pin.OUT)
-# pinMode(valve_1, OUTPUT)
-# pinMode(valve_2, OUTPUT)
-
-#pinMode(LED_BUILTIN, OUTPUT)
-
-  #Serial.begin(9600) #// starts communication through the USB connection at a baud rate of 9600
-  #//setupScreen()
-
-#   Wire.setSDA(screen_data) #// the 3 of these were previously Wire1
-#   Wire.setSCL(screen_clock)
-#   Wire.begin(SCREEN_ADDR) 
-#   
-#   
-#   lcd.init()
-#   lcd.backlight()
-
-
-# /* States can be categorized by the following:
-# Wait  - no buttons have been pressed
-#       - nothing is being dispensed
-#       - green status LED is on
-#       - screen value changes as potentiometers are turned
-#       - Conditions to check before entering the state: 
-#             1. button is pressed and the corresponding potentiometer has a non-zero value
-#             2. previous state was wait
-#             3. load cell reads a value > X grams -> we originally said 19 grams
-# Dispense  - machine status turns yellow
-#           - "zeros" out the scale
-#           - corresponding valve opens
-#           - updates the screen every few seconds
-#           - if the weight isn't changing after 10 seconds -> enter Debug mode bc something is out of stock 
-#           - if weight gets picked up -> immediately stop!
-#           - constantly checks if the load cell detects a weight within tolerance of requested quantity 
-#               ---> when it does, it stops & closes the valve
-#             - ensures that there's no overflow otherwise it will move into the debug state
-# Debug - machine status is red
-#       - all button presses and potentiometer spins get ignored until the reset button is hit
-# */
-
-
-
-# /* Tracks the current state of the machine */
-#State curState
-
-# /* Screen will be updating periodically to keep the user informed
-# Normal - Selected Product X, Quantity = Y
-# NoContainer - Error: Must Place Container!
-# NoQuantity - Error: Must Select Quantity!
-# */
-
-#states
-#enum State Wait, Start, Dispense, End, Debug
-#enum ScreenText Select, NormalA, NormalB, NoContainer, NoQuantity, Overflow_text, OutOfStock
-#ScreenText curText
-
-#/* Initialize all UI components to off or 0 */
 button_1_state, button_2_state, reset_state, pot_1_state, pot_2_state = 0,0,0,0,0 
 
 #/* Keeps track of the weight to dispense */
 weight = 0 
-pot1setting=0
-pot2setting=0
-buttonvalA=False
-buttonvalB=False
-# /* TESTING - The goal of this function is to let us know if we're properly understanding how the buttons work */
-# void readButtons(int * buf)
-#   int but_1_state = digitalRead(button_1)
-#   int but_2_state = digitalRead(button_2)
-#   int res_state =  digitalRead(reset_button)
-#   
-#   if (but_1_state == 1)
-#       Serial.println("button 1 pressed")
-#   
-#   if (but_2_state == 1)
-#       Serial.println("button 2 pressed")
-#   
-#   if (res_state == 1)
-#     Serial.println("reset pressed")
-#   
-# 
-# 
-# /* TESTING - The goal of this function is to figure out the values given by potentiometer readings */
-# void readPots() 
-#   int p_1_state = analogRead(pot_1)
-#   int p_2_state = analogRead(pot_2)
-#   Serial.println("Pot 1 Value: ")
-#   Serial.println(p_1_state)
-#   Serial.println("Pot 2 Value: ")
-#   Serial.println(p_2_state)
-# 
-# 
-# /* TESTING - Testing for the first part of the pseudocode */
-# void doButtonsAndPotsWork() 
-#   int but_1_state = digitalRead(button_1)
-#   int but_2_state = digitalRead(button_2)
-#   int p_1_state = analogRead(pot_1)
-#   int p_2_state = analogRead(pot_2)
-# 
-#   if (but_1_state == PRESSED and p_1_state > 0) 
-#     Serial.println("Pot 1 Value: ")
-#     Serial.println(p_1_state)
-#     digitalWrite(LED_BUILTIN, HIGH)
-#   
-#   else if (but_2_state == PRESSED && p_2_state > 0) 
-#     Serial.println("Pot 2 Value: ")
-#     Serial.println(p_2_state)
-#     digitalWrite(LED_BUILTIN, HIGH)
-#   
-# 
-#   delay(100)
-#   digitalWrite(LED_BUILTIN, LOW)
-# 
-# 
-# /* Updates the status of the leds */
+pot1setting = 0
+pot2setting = 0
+buttonvalA = False
+buttonvalB = False
 
 def updateLEDS(green_status, yellow_status, red_status):
     green_led.value(green_status)
@@ -197,65 +41,47 @@ def updateLEDS(green_status, yellow_status, red_status):
     red_led.value(red_status)
 
 
-# /* Setsup screen to write to */
-# //void setupScreen()  // recheck the pins for SDA or SCL
- 
-  
-
-# //
-# // enum ScreenText Normal, NoContainer, NoQuantity
-# /* */
 def updateScreen(text): 
   match text: 
     case 'Select':
       #//show both products, vals of potentiometers for both
       oled.fill(0)
-      oled.text("Product 1 quantity: "+str(pot1setting),0,10)
-      oled.text("Product 2 quantity: "+str(pot1setting),0,35)
+      oled.text("Product 1 quantity: " + str(pot1setting), 0, 10)
+      oled.text("Product 2 quantity: " + str(pot1setting), 0, 35)
       oled.show()
-      #break
+
     case 'NormalA':
       oled.fill(0)
-      oled.text("Selected Product 1, Quantity= ",0,10)
-      oled.text(str(weight)+" grams", 5, 35)
+      oled.text("Selected Product 1, Quantity= ", 0, 10)
+      oled.text(str(weight) + " grams", 5, 35)
       oled.show()
-      #// Selected Product X, Quantity = Y being dispensed
-      #break
+    
     case 'NormalB':
       oled.fill(0)
       oled.text("Selected Product 2, Quantity= ",0,10)
       oled.text(str(weight)+" grams", 5, 35)
       oled.show()
-      #// Selected Product X, Quantity = Y being dispensed
-      #break
       
     case 'NoContainer': 
       oled.fill(0)
       oled.text("Error: Must Place Container!",0,10)
       oled.show()
-      #break
 
     case 'NoQuantity':
       oled.fill(0)
       oled.text("Error: Must Select Quantity!",0,10)
       oled.show()
-      #break
 
     case 'Overflow_text':
       oled.fill(0)
       oled.text("Overflow detected",0,10)
       oled.show()
-      #break
 
     case 'OutOfStock':
       oled.fill(0)
       oled.text("Item is out of stock",0,10)
       oled.show()
-      #break
 
-#     case other:
-#       break    
-  
 
 
 

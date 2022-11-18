@@ -49,7 +49,7 @@ Dispense  - machine status turns yellow
 Debug - machine status is red
       - all button presses and potentiometer spins get ignored until the reset button is hit
 */
-enum State {Wait, Start, Dispense, End, Debug};
+enum State {Wait, Dispense, Debug};
 
 /* Tracks the current state of the machine */
 State curState;
