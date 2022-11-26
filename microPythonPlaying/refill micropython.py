@@ -37,6 +37,10 @@ pot2setting = 0
 buttonvalA = False
 buttonvalB = False
 
+res,text='',''
+
+
+
 def updateLEDS(green_status, yellow_status, red_status):
     green_led.value(green_status)
     yellow_led.value(yellow_status)
@@ -111,7 +115,7 @@ def closeValves():
 
 
 
-res,text='',''
+
 
 #/* this function is called as soon as a valve opens. It constantly checks the weight of the container with the weight of the load cell */
 def fillUp(): 
@@ -138,16 +142,37 @@ def fillUp():
     return 'SUCCESS'
   
   
+def writeEmpty():
+    f=open("bottle_status.txt", "w")
+    f.write("Empty")
+    f.close()
+    
+def writeFilled():
+    f=open("bottle_status.txt", "w")
+    f.write("Filled")
+    f.close()
+    
+    
 
-
+#read bottle status file to see if the bottles are empty or not
+f=open("bottle_status.txt", "r")
+if f.readline()=="Empty":
+    curState='Debug'
+    res="OUTOFSTOCK"
+else:
+    curState="Wait"
+    
+f.close()    
+closeValves()
 
 
 
 #/* Constantly runs */
 run=True
 while run: 
-  if (reset_state == 1): 
+  if (reset_state == 1):
     closeValves()
+    writeFilled()
     curState = 'Wait'
   
   if curState== 'Wait':
@@ -175,8 +200,6 @@ while run:
       
       elif (button_1_state == 1 or button_2_state == 1 and load_cell_val==0):
         text='NoContainer'
-      
-      break
     
   if curState== 'Dispense':
       if (buttonvalA):
@@ -197,7 +220,6 @@ while run:
         curState = 'Wait'
       
       closeValves()
-      break
 
   if curState== 'Debug':
       updateLEDS(0,0,1) #// red
@@ -206,14 +228,13 @@ while run:
       
       if(res=='OUTOFSTOCK'):
         text='OutOfStock'
-      
+        writeEmpty()
       #// write to screen some error message
       if (reset_state == 1): 
         curState = 'Wait'
       
-      weight = 0
+      weight = 0  #might need to be changed
       closeValves()
-      break
     
   
   updateScreen(text)
