@@ -1,3 +1,4 @@
+
 from machine import Pin, I2C, ADC
 from ssd1306 import SSD1306_I2C
 from oled import Write, GFX, SSD1306_I2C
@@ -8,23 +9,24 @@ WIDTH =128
 
 HEIGHT= 64
 
-i2c = I2C(0, scl = Pin(1), sda = Pin(0),freq = 200000)
+i2c = I2C(0, sda = Pin(4), scl = Pin(5),freq = 200000)
 oled = SSD1306_I2C(WIDTH,HEIGHT,i2c)
 
-pot_1 = ADC(32)
-pot_2 = ADC(34)
-button_1 = Pin(12,Pin.IN)
-button_2 = Pin(14,Pin.IN)
-reset_button = Pin(15,Pin.IN)
 
-green_led = Pin(16,Pin.OUT)
-yellow_led = Pin(17,Pin.OUT)
-red_led = Pin(19,Pin.OUT)
+pot_1 = ADC(27)
+pot_2 = ADC(28)
+load_cell = ADC(26)
 
-load_cell = ADC(31)
+button_1 = Pin(9,Pin.IN)
+button_2 = Pin(10,Pin.IN)
+reset_button = Pin(11,Pin.IN)
 
-valve_1 = Pin(2,Pin.OUT) #used to be 1 and 2
-valve_2 = Pin(3,Pin.OUT)
+green_led = Pin(12,Pin.OUT)
+yellow_led = Pin(13,Pin.OUT)
+red_led = Pin(14,Pin.OUT)
+
+valve_1 = Pin(1,Pin.OUT) #used to be 1 and 2
+valve_2 = Pin(2,Pin.OUT)
 
 button_1_state, button_2_state, reset_state, pot_1_state, pot_2_state = 0,0,0,0,0 
 
@@ -42,46 +44,46 @@ def updateLEDS(green_status, yellow_status, red_status):
 
 
 def updateScreen(text): 
-  match text: 
-    case 'Select':
+
+    if text=='Select':
       #//show both products, vals of potentiometers for both
       oled.fill(0)
       oled.text("Product 1 quantity: " + str(pot1setting), 0, 10)
       oled.text("Product 2 quantity: " + str(pot1setting), 0, 35)
       oled.show()
 
-    case 'NormalA':
+    if text== 'NormalA':
       oled.fill(0)
       oled.text("Selected Product 1, Quantity= ", 0, 10)
       oled.text(str(weight) + " grams", 5, 35)
       oled.show()
-    
-    case 'NormalB':
+
+    if text== 'NormalB':
       oled.fill(0)
       oled.text("Selected Product 2, Quantity= ",0,10)
       oled.text(str(weight)+" grams", 5, 35)
       oled.show()
       
-    case 'NoContainer': 
+    if text== 'NoContainer': 
       oled.fill(0)
       oled.text("Error: Must Place Container!",0,10)
       oled.show()
 
-    case 'NoQuantity':
+    if text== 'NoQuantity':
       oled.fill(0)
       oled.text("Error: Must Select Quantity!",0,10)
       oled.show()
 
-    case 'Overflow_text':
+    if text== 'Overflow_text':
       oled.fill(0)
       oled.text("Overflow detected",0,10)
       oled.show()
 
-    case 'OutOfStock':
+    if text== 'OutOfStock':
       oled.fill(0)
       oled.text("Item is out of stock",0,10)
       oled.show()
-
+    utime.sleep_ms(100)
 
 
 
@@ -91,7 +93,7 @@ def readUI():
   button_2_state = button_2.value()
   pot_1_state = pot_1.read_u16() 
   pot_2_state = pot_2.read_u16() 
-  reset_state = reset_button.read_u16()
+  reset_state = reset_button.value()
 
 
 
@@ -144,19 +146,18 @@ def fillUp():
 #/* Constantly runs */
 run=True
 while run: 
-  if (reset_state == 'PRESSED'): 
+  if (reset_state == 1): 
     closeValves()
     curState = 'Wait'
   
-  match curState:  #//enum State Wait, Start, Dispense, End, Debug
-    case 'Wait':
+  if curState== 'Wait':
       #// closeValves() // idk if we want this here...
       updateLEDS(1,0,0) #// green
       readUI() 
       pot1setting=round(pot_1_state/65536* 5,2)  #originally (val/40905*100)/100
       pot2setting=round(pot_2_state/65536* 5,2)
       load_cell_val=round(load_cell.read_u16()/65536* 5,2)
-      text=Select 
+      text='Select'
       if (button_1_state == 1 and pot_1_state > 3 and load_cell_val>3): 
         buttonvalA=True
         curState = 'Dispense'
@@ -177,7 +178,7 @@ while run:
       
       break
     
-    case 'Dispense':
+  if curState== 'Dispense':
       if (buttonvalA):
         text='NormalA'
       
@@ -198,7 +199,7 @@ while run:
       closeValves()
       break
 
-    case 'Debug':
+  if curState== 'Debug':
       updateLEDS(0,0,1) #// red
       if(res=='OVERFLOW'):
         text='Overflow_text'
