@@ -12,6 +12,9 @@ HEIGHT = 64
 i2c = I2C(0, sda = Pin(4), scl = Pin(5), freq = 200000)
 oled = SSD1306_I2C(WIDTH, HEIGHT, i2c)
 
+# for HX711 chip
+#scales = Scales(d_out = 5, pd_sck = 6) # must confirm  MUST FIX THIS BEFORE USING IT
+
 # port declarations
 #pot_1 = ADC(27)
 #pot_2 = ADC(28)
@@ -26,8 +29,8 @@ green_led = Pin(12, Pin.OUT)
 yellow_led = Pin(13, Pin.OUT)
 red_led = Pin(14, Pin.OUT)
 
-valve_1 = Pin(1, Pin.OUT) 
-valve_2 = Pin(2, Pin.OUT)
+valve_1 = Pin(0, Pin.OUT) 
+valve_2 = Pin(1, Pin.OUT)
 
 load_cell = ADC(26)
 
@@ -166,9 +169,13 @@ def closeValves():
 # this function is called as soon as a valve opens. 
 # It constantly checks the weight of the container with the weight of the load cell
 def fillUp(): 
+  print("Filling UP")
+  return 'SUCCESS'
   count = 0
   prev_value = -1
-  load_cell_val = round(load_cell.read_u16() / (65536 * 5),2) # get the value of the load cell here
+  #scales.tare()                                       # MUST UNCOMMENT LATER
+  load_cell_val = round(scales.raw_value() / 405, 2)
+  #load_cell_val = round(load_cell.read_u16() / (65536 * 5),2) # get the value of the load cell here
 
   while (load_cell_val < (0.9 * weight)): 
     if (count == 10): 
@@ -188,11 +195,15 @@ def fillUp():
   
   
 def writeEmpty():
+  print("writing empty")
+  return 
   f = open("bottle_status.txt", "w")
   f.write("Empty")
   f.close()
     
 def writeFilled():
+  print("writing filled")
+  return 
   f = open("bottle_status.txt", "w")
   f.write("Filled")
   f.close()
@@ -200,6 +211,8 @@ def writeFilled():
 
 #read bottle status file to see if the bottles are empty or not ----> unused as of rn, CALL IT AT THE BEGINING!!!!!!!!
 def getBottleStatus():
+  print("getting bottle status")
+  return 
   f = open("bottle_status.txt", "r")
   if f.readline() == "Empty":
     curState = 'Debug'
@@ -215,8 +228,10 @@ def getBottleStatus():
 def refillDispensary():
   while True: 
     if (reset_state == 1):
+      print("In Reset State")
       closeValves()         # close all valves
-      writeFilled()         # reset the state of both bottles to be filled -> assumes a restock happens
+      print("Closed valves")
+      #writeFilled()         # reset the state of both bottles to be filled -> assumes a restock happens
       curState = 'Wait'
     
     if curState == 'Wait':
@@ -224,34 +239,40 @@ def refillDispensary():
       readUI()              # gets all the UI values 
 
       #load_cell_val = round(load_cell.read_u16() / (65536 * 5), 2) 
-      scales = Scales(d_out = 5, pd_sck = 6)
-      scales.tare()                                       # need to ensure that the scale gets zeroed out
+      #scales.tare()                                       # need to ensure that the scale gets zeroed out
       load_cell_val = round(scales.raw_value() / 405, 2)
       #text = 'Select'
       updateScreen('Select')
 
       if (button_1_state == 1 and pot_1_state > 3 and load_cell_val > 3): 
+        print("going to dispense product A")
         buttonvalA = True
         curState = 'Dispense'
         weight = pot1setting
         openValve(1)
       elif (button_2_state == 1 and pot_2_state > 3 and load_cell_val > 3): 
+        print("going to dispense product B")
         buttonvalB = True
         curState = 'Dispense'
         weight = pot2setting 
         openValve(2)
       elif ((button_1_state == 1 and pot_1_state < 3) or (button_2_state == 'PRESSED' and pot_2_state < 3)):
-        text = 'NoQuantity'      
-      elif (button_1_state == 1 or button_2_state == 1 and load_cell_val == 0):
-          text = 'NoContainer'
+        # text = 'NoQuantity'
+        updateScreen('NoQuantity')      
+      elif ((button_1_state == 1 or button_2_state == 1) and load_cell_val == 0):
+          #text = 'NoContainer'
+        updateScreen('NoContainer')
       
     if curState == 'Dispense':
+      print("Dispensing")
       if (buttonvalA):
-        text = 'NormalA'
+        #text = 'NormalA'
+        updateScreen('NormalA')
       elif (buttonvalB):
-        text = 'NormalB'
+        #text = 'NormalB'
+        updateScreen('NormalB')
         
-      updateScreen(text)
+      #updateScreen(text)
       buttonvalA = False
       buttonvalB = False
       updateLEDS(0, 1, 0)  # yellow
@@ -266,10 +287,12 @@ def refillDispensary():
     if curState == 'Debug':
       updateLEDS(0,0,1) # red
       if (res == 'OVERFLOW'):
-        text = 'Overflow_text'
+        #text = 'Overflow_text'
+        updateScreen('Overflow_text')
         
       if (res == 'OUTOFSTOCK'):
-        text = 'OutOfStock'
+        #text = 'OutOfStock'
+        updateScreen('OutOfStock')
         writeEmpty()
       # write to screen some error message
       if (reset_state == 1): 
@@ -277,4 +300,4 @@ def refillDispensary():
         
       weight = 0  # might need to be changed
       closeValves()
-    updateScreen(text)
+    #updateScreen(text)
