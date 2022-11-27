@@ -1,19 +1,20 @@
-from machine import Pin, I2C, ADC
+from machine import Pin, I2C, ADC, machine
 from ssd1306 import SSD1306_I2C
 from oled import Write, GFX, SSD1306_I2C
 from oled.fonts import ubuntu_mono_15, ubuntu_mono_20
 import utime
 
-WIDTH =128
-HEIGHT= 64
-
+# screen setup
+WIDTH = 128
+HEIGHT = 64
 i2c = I2C(0, sda = Pin(4), scl = Pin(5), freq = 200000)
 oled = SSD1306_I2C(WIDTH, HEIGHT, i2c)
 
-
-pot_1 = ADC(27)
-pot_2 = ADC(28)
-load_cell = ADC(26)
+# port declarations
+#pot_1 = ADC(27)
+#pot_2 = ADC(28)
+pot_1 = machine.ADC(27)
+pot_2 = machine.ADC(28)
 
 button_1 = Pin(9, Pin.IN)
 button_2 = Pin(10, Pin.IN)
@@ -23,10 +24,13 @@ green_led = Pin(12, Pin.OUT)
 yellow_led = Pin(13, Pin.OUT)
 red_led = Pin(14, Pin.OUT)
 
-valve_1 = Pin(1, Pin.OUT) #used to be 1 and 2
+valve_1 = Pin(1, Pin.OUT) 
 valve_2 = Pin(2, Pin.OUT)
 
-button_1_state, button_2_state, reset_state, pot_1_state, pot_2_state = 0,0,0,0,0 
+load_cell = ADC(26)
+
+# tracks the state of all UI components 
+button_1_state, button_2_state, reset_state, pot_1_state, pot_2_state = 0, 0, 0, 0, 0 
 
 # Keeps track of the weight to dispense 
 weight = 0 
@@ -42,10 +46,8 @@ def updateLEDS(green_status, yellow_status, red_status):
   yellow_led.value(yellow_status)
   red_led.value(red_status)
 
-
 def updateScreen(text): 
-  if text == 'Select':
-      # show both products, vals of potentiometers for both
+  if text == 'Select': # show both products, vals of potentiometers for both
     oled.fill(0)
     oled.text("Product 1 quantity: " + str(pot1setting), 0, 10)
     oled.text("Product 2 quantity: " + str(pot1setting), 0, 35)
@@ -53,14 +55,14 @@ def updateScreen(text):
 
   if text == 'NormalA':
     oled.fill(0)
-    oled.text("Selected Product 1, Quantity= ", 0, 10)
+    oled.text("Selected Product 1, Quantity = ", 0, 10)
     oled.text(str(weight) + " grams", 5, 35)
     oled.show()
 
   if text== 'NormalB':
     oled.fill(0)
-    oled.text("Selected Product 2, Quantity= ", 0, 10)
-    oled.text(str(weight)+" grams", 5, 35)
+    oled.text("Selected Product 2, Quantity = ", 0, 10)
+    oled.text(str(weight) + " grams", 5, 35)
     oled.show()
       
   if text == 'NoContainer': 
@@ -89,9 +91,23 @@ def updateScreen(text):
 def readUI(): 
   button_1_state = button_1.value() 
   button_2_state = button_2.value()
-  pot_1_state = pot_1.read_u16() 
-  pot_2_state = pot_2.read_u16() 
   reset_state = reset_button.value()
+  pot_1_state = pot_1.read_u16() 
+  pot_2_state = pot_2.read_u16()
+
+  if pot_1_state > 50000:
+    pot_1_state = 50000
+  elif pot_1_state < 400:
+    pot_1_state = 0
+
+  pot_1_state = round(pot_1_state / 50000, 2)
+
+  if pot_2_state > 50000:
+    pot_2_state = 50000
+  elif pot_2_state < 400:
+    pot_2_state = 0
+  
+  pot_2_state = round(pot_2_state / 50000, 2)
 
 # opens the respective valve
 def openValve(v): 
@@ -157,19 +173,16 @@ def getBottleStatus():
 
 # Constantly runs 
 def refillDispensary():
-  run = False
-  while run: 
+  while True: 
     if (reset_state == 1):
-      closeValves()
+      closeValves() 
       writeFilled()
       curState = 'Wait'
     
     if curState == 'Wait':
-      # closeValves()  idk if we want this here...
-      updateLEDS(1,0,0) # green
+      updateLEDS(1, 0, 0)                                # green
       readUI() 
-      pot1setting = round(pot_1_state / (65536 * 5), 2)  #originally (val/40905*100)/100
-      pot2setting = round(pot_2_state / (65536 * 5), 2)
+
       load_cell_val = round(load_cell.read_u16() / (65536 * 5), 2)
       text ='Select'
 
@@ -197,7 +210,7 @@ def refillDispensary():
       updateScreen(text)
       buttonvalA = False
       buttonvalB = False
-      updateLEDS(0,1,0)  # yellow
+      updateLEDS(0, 1, 0)  # yellow
       res = fillUp()
         
       if (res == 'OVERFLOW' or res == 'OUTOFSTOCK'): 
@@ -208,10 +221,10 @@ def refillDispensary():
 
     if curState == 'Debug':
       updateLEDS(0,0,1) # red
-      if(res == 'OVERFLOW'):
+      if (res == 'OVERFLOW'):
         text = 'Overflow_text'
         
-      if(res == 'OUTOFSTOCK'):
+      if (res == 'OUTOFSTOCK'):
         text = 'OutOfStock'
         writeEmpty()
       # write to screen some error message
