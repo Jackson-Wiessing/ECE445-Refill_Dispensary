@@ -4,6 +4,8 @@ from oled import Write, GFX, SSD1306_I2C
 from oled.fonts import ubuntu_mono_15, ubuntu_mono_20
 import utime
 
+# CHECK ALL THE PINS AGAIN BEFORE RUNNING THE CODE
+
 # screen setup
 WIDTH = 128
 HEIGHT = 64
@@ -41,6 +43,45 @@ buttonvalB = False
 
 res, text = '', ''
 
+def scale_values(): 			# my phone is 227.8 grams
+    display_calculating()
+    res = remove_outliers()
+    print("res = ", res)
+    print("scaled value: ", res / 405.7)
+    return res / 405.7
+
+class Scales(HX711):
+    def __init__(self, d_out, pd_sck):
+        super(Scales, self).__init__(d_out, pd_sck)
+        self.offset = 0
+
+    def reset(self):
+        self.power_off()
+        self.power_on()
+
+    def tare(self):
+        self.offset = self.read()
+
+    def raw_value(self):
+        return self.read() - self.offset
+
+    def stable_value(self, reads=10, delay_us=500):
+        values = []
+        for _ in range(reads):
+            values.append(self.raw_value())
+            #sleep_us(delay_us)
+        return self._stabilizer(values)
+
+    @staticmethod
+    def _stabilizer(values, deviation=10):
+        weights = []
+        for prev in values:
+            if prev == 0:
+                weights.append(0)
+            else:
+                weights.append(sum([1 for current in values if abs(prev - current) / (prev / 100) <= deviation]))
+        return sorted(zip(values, weights), key=lambda x: x[1]).pop()[0]
+    
 def updateLEDS(green_status, yellow_status, red_status):
   green_led.value(green_status)
   yellow_led.value(yellow_status)
@@ -49,8 +90,8 @@ def updateLEDS(green_status, yellow_status, red_status):
 def updateScreen(text): 
   if text == 'Select': # show both products, vals of potentiometers for both
     oled.fill(0)
-    oled.text("Product 1 quantity: " + str(pot1setting), 0, 10)
-    oled.text("Product 2 quantity: " + str(pot1setting), 0, 35)
+    oled.text("Product 1 quantity: " + str(pot_1_state), 0, 10)
+    oled.text("Product 2 quantity: " + str(pot_1_state), 0, 35)
     oled.show()
 
   if text == 'NormalA':
@@ -100,13 +141,12 @@ def readUI():
   elif pot_1_state < 400:
     pot_1_state = 0
 
-  pot_1_state = round(pot_1_state / 50000, 2)
-
   if pot_2_state > 50000:
     pot_2_state = 50000
   elif pot_2_state < 400:
     pot_2_state = 0
   
+  pot_1_state = round(pot_1_state / 50000, 2)
   pot_2_state = round(pot_2_state / 50000, 2)
 
 # opens the respective valve
@@ -162,7 +202,7 @@ def writeFilled():
 def getBottleStatus():
   f = open("bottle_status.txt", "r")
   if f.readline() == "Empty":
-    curState ='Debug'
+    curState = 'Debug'
     res = "OUTOFSTOCK"
   else:
     curState = "Wait"
@@ -175,16 +215,20 @@ def getBottleStatus():
 def refillDispensary():
   while True: 
     if (reset_state == 1):
-      closeValves() 
-      writeFilled()
+      closeValves()         # close all valves
+      writeFilled()         # reset the state of both bottles to be filled -> assumes a restock happens
       curState = 'Wait'
     
     if curState == 'Wait':
-      updateLEDS(1, 0, 0)                                # green
-      readUI() 
+      updateLEDS(1, 0, 0)   # green
+      readUI()              # gets all the UI values 
 
-      load_cell_val = round(load_cell.read_u16() / (65536 * 5), 2)
-      text ='Select'
+      #load_cell_val = round(load_cell.read_u16() / (65536 * 5), 2) 
+      scales = Scales(d_out = 5, pd_sck = 6)
+      scales.tare()                                       # need to ensure that the scale gets zeroed out
+      load_cell_val = round(scales.raw_value() / 405, 2)
+      #text = 'Select'
+      updateScreen('Select')
 
       if (button_1_state == 1 and pot_1_state > 3 and load_cell_val > 3): 
         buttonvalA = True
