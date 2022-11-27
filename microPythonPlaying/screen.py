@@ -13,7 +13,7 @@ WIDTH =128
 
 HEIGHT= 64
 
-i2c=I2C(0,scl=Pin(1),sda=Pin(0),freq=200000)
+i2c=I2C(0,sda=Pin(0),scl=Pin(1),freq=200000)
 
 print("i2c initialization done")
 
