@@ -194,7 +194,8 @@ def readUI(button_1_state, button_2_state, reset_state, pot_1_state, pot_2_state
 
 
 # opens the respective valve
-def openValve(v): 
+def openValve(v):
+  print("opening valve ", v)
   if v == 1:
     valve_1.value(1)
   elif v == 2:
@@ -221,21 +222,28 @@ def fillUp(w):
     print("scales.raw_value")
     load_cell_val = round(scales.raw_value() / (2**22) * 30000, 2)
     utime.sleep(1)
+    reset_state = not (reset_button.value())
     
     while (load_cell_val < (0.9 * w) and load_cell_val != w):
         #updateScreen('Dispense', 0, 0, load_cell_val)
+        reset_state = not (reset_button.value())
+        if reset_state:
+            resetState()
+            
         print("count: ", count, " load cell val: ", load_cell_val)
         load_cell_val = round(scales.raw_value() / (2**22) * 30000, 2)
 
         if (load_cell_val > (3 * w)):
             print("overflow")
             updateScreen('OVERFLOW', 0, 0, 0)
-            updateLEDS(0, 0, 1)
+            updateLEDS(0, 1, 0)
+            closeValves()
             return 'OVERFLOW'
         if (count == 50):
             print("out of stock")
             updateScreen('OUTOFSTOCK', 0, 0, 0)
-            updateLEDS(0, 0, 1)
+            updateLEDS(0, 1, 0)
+            closeValves()
             return 'OUTOFSTOCK'
         
         if prev_value == load_cell_val:
@@ -258,11 +266,19 @@ def fillUp(w):
     print("success")
     updateScreen('SUCCESS', 0, 0, round((scales.raw_value() / (2**22)) * 30000, 2))
     updateLEDS(1, 0, 0)
+    closeValves()
     return 'SUCCESS'
     
 
+def resetState():
+    closeValves()
+    utime.sleep(3)
+    while True:
+        reset_state = not (reset_button.value())
+        if reset_state:
+            refillDispensary()
 
-def workOrElse():
+def refillDispensary():
     res = ""
     button_1_state, button_2_state, reset_state, pot_1_state, pot_2_state = 0, 0, 0, 0, 0 
     # global weight
@@ -271,9 +287,9 @@ def workOrElse():
     print("started")
     updateScreen('Select', pot_1_state, pot_2_state, 0)
     updateLEDS(1, 0, 0) # green LED
+    closeValves()
     
     while True:
-        #readUI(button_1_state, button_2_state, reset_state, pot_1_state, pot_2_state)
         button_1_state = not (button_1.value())
         button_2_state = not (button_2.value())
         reset_state = not (reset_button.value())
@@ -294,7 +310,7 @@ def workOrElse():
         pot_2_state = int(pot_2_state / 50)
         #print("pot 1: ", pot_1_state)
         #print("pot 2: ", pot_2_state)
-        valve_1.value(0)
+        #valve_1.value(0)
         if (button_1_state):
             print("button 1 pressed")
             print("pot_1 = ", pot_1_state)
@@ -302,28 +318,34 @@ def workOrElse():
                 updateScreen('NoQuantity', pot_1_state, pot_2_state)
             else:
                 updateScreen('NormalA', pot_1_state, pot_2_state)
+                updateLEDS(0, 0, 1)
+                #openValve(1)
+                valve_2.value(1)
                 res = fillUp(pot_1_state)
             utime.sleep(10)
         elif (button_2_state):
-            updateLEDS(0, 1, 0)
             print("button 2 pressed")
             print("pot_2 = ", pot_2_state)
             if pot_2_state < .01:
                 updateScreen('NoQuantity', pot_1_state, pot_2_state)
             else:
+                updateLEDS(0, 0, 1)
                 updateScreen('NormalB', pot_1_state, pot_2_state)
+                #openValve(2)
+                valve_1.value(1)
                 res = fillUp(pot_2_state)
             utime.sleep(10)
         elif (reset_state):
-            updateLEDS(0, 0, 1)
+            updateLEDS(0, 1, 0)
             print("reset pressed")
             updateScreen('Reset', pot_1_state, pot_2_state)
             valve_1.value(0)
             valve_2.value(0)
-            break
+            resetState()
         else:
             updateScreen('Select', pot_1_state, pot_2_state)
 
 
-workOrElse()
+refillDispensary()
+#closeValves()
 
