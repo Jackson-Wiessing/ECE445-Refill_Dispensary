@@ -219,13 +219,13 @@ def fillUp(w):
     count = 0
     prev_value = 0
     print("scales.raw_value")
-    load_cell_val = round(scales.raw_value() / 4.05, 2)
+    load_cell_val = round(scales.raw_value() / (2**22) * 30000, 2)
     utime.sleep(1)
     
     while (load_cell_val < (0.9 * w) and load_cell_val != w):
         #updateScreen('Dispense', 0, 0, load_cell_val)
         print("count: ", count, " load cell val: ", load_cell_val)
-        load_cell_val = round(scales.raw_value() / 4.05, 2)
+        load_cell_val = round(scales.raw_value() / (2**22) * 30000, 2)
 
         if (load_cell_val > (3 * w)):
             print("overflow")
@@ -256,7 +256,7 @@ def fillUp(w):
        # print("load cell says: ", load_cell_val)
        # print("prev value says: ", prev_value)
     print("success")
-    updateScreen('SUCCESS', 0, 0, round(scales.raw_value() / 4.05, 2))
+    updateScreen('SUCCESS', 0, 0, round((scales.raw_value() / (2**22)) * 30000, 2))
     updateLEDS(1, 0, 0)
     return 'SUCCESS'
     
@@ -270,7 +270,7 @@ def workOrElse():
     scales.tare()
     print("started")
     updateScreen('Select', pot_1_state, pot_2_state, 0)
-    updateLEDS(1, 0, 0) # green LED 
+    updateLEDS(1, 0, 0) # green LED
     
     while True:
         #readUI(button_1_state, button_2_state, reset_state, pot_1_state, pot_2_state)
@@ -294,7 +294,7 @@ def workOrElse():
         pot_2_state = int(pot_2_state / 50)
         #print("pot 1: ", pot_1_state)
         #print("pot 2: ", pot_2_state)
-        
+        valve_1.value(0)
         if (button_1_state):
             print("button 1 pressed")
             print("pot_1 = ", pot_1_state)
@@ -318,16 +318,12 @@ def workOrElse():
             updateLEDS(0, 0, 1)
             print("reset pressed")
             updateScreen('Reset', pot_1_state, pot_2_state)
+            valve_1.value(0)
+            valve_2.value(0)
             break
         else:
             updateScreen('Select', pot_1_state, pot_2_state)
-        #elif ((button_1_state == 1 and pot_1_state < 3) or (button_2_state == 'PRESSED' and pot_2_state < 3)):
-           # updateScreen('NoQuantity')
-       # elif button_1_state == 1 or button_2_state == 1:
-         #   updateScreen('NoContainer')
-        
-       # utime.sleep(1)
-       # 'OVERFLOW', 'OUTOFSTOCK', 'SUCCESSworkOrElse()
+
 
 workOrElse()
 
