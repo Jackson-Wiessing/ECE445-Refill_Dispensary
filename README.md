@@ -2,7 +2,7 @@
 
 **Welcome to our refill dispensary repo!**
 
-**Introduction:**. 
+**Introduction:** 
 
 Plastic waste is a massive issue world-wide, particularly as it pertains to the packaging of food and other household goods. The United States Environmental Protection Agency estimates that in 2018, 14 million tons of plastic was consumed for packaging in the USA with about seventy percent of that ending up in landfills[1]. Plastic waste is detrimental to the environment as it doesn’t decompose naturally on human time scales. End-user plastic waste is often unnecessary as consumers own containers capable of being reused. 
 
@@ -15,6 +15,6 @@ We built a vending machine that dispenses precise quantities of goods (between 1
 2. The machine dispenses two different types of low-viscosity liquids and is able to perform 2 orders in succession. 
 3. The machine can deliver another order properly after 1 of the liquids is switched out or refilled. 
 
-**Block Diagram:**. 
+**Block Diagram:** 
 
 <img width="739" alt="Screenshot 2022-12-24 at 11 00 21 AM" src="https://user-images.githubusercontent.com/77509822/209443388-2926d432-04e5-417a-aa58-91b34c838393.png">
