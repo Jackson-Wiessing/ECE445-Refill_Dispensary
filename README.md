@@ -14,3 +14,6 @@ We built a vending machine that dispenses precise quantities of goods (between 1
 1. The user is able to choose an item and quantity to get dispensed via buttons and rotary potentiometers. Before placing the order, the user will have some indication of the amount ordered within a tolerance of 10 grams for weights between .1 kg and 2kg.
 2. The machine dispenses two different types of low-viscosity liquids and is able to perform 2 orders in succession. 
 3. The machine can deliver another order properly after 1 of the liquids is switched out or refilled. 
+
+**Block Diagram:**
+<img width="739" alt="Screenshot 2022-12-24 at 11 00 21 AM" src="https://user-images.githubusercontent.com/77509822/209443388-2926d432-04e5-417a-aa58-91b34c838393.png">
