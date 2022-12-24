@@ -2,7 +2,7 @@
 
 **Welcome to our refill dispensary repo!**
 
-**Introduction**
+**Introduction: **
 Plastic waste is a massive issue world-wide, particularly as it pertains to the packaging of food and other household goods. The United States Environmental Protection Agency estimates that in 2018, 14 million tons of plastic was consumed for packaging in the USA with about seventy percent of that ending up in landfills[1]. Plastic waste is detrimental to the environment as it doesn’t decompose naturally on human time scales. End-user plastic waste is often unnecessary as consumers own containers capable of being reused. 
 
 We built a vending machine that dispenses precise quantities of goods (between 10 g and 5 kg) into reusable containers. The goal of the machine is to get users to keep bringing the same container back. In addition to plastic waste, our machine tackles the issue of waste in general as users are no longer forced to get quantities larger than desired. 
